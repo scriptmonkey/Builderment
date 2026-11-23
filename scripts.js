@@ -60,6 +60,21 @@ function factorycalc(reverse) {
   const empty_fuel = new MatDef("Empty Fuel Cell",[3,4],[carbide,glass],[3,5],51)
   const nuclear_fuel = new MatDef("Nuclear Fuel Cell",[4,2],[empty_fuel,steel_rod,enriched_ur],[1,1,1],52)
 
+'Alternate recipes (same MatDef format, rate = output per minute at level 1, quantities per 1 output item)'
+  const altRecipes = [
+    new MatDef("Copper Wire", [1, 60], [carbfibre], [1 / 8], 9),
+    new MatDef("Iron Gear", [1, 60], [steel], [1 / 8], 11),
+    new MatDef("Electromagnet", [3, 36], [nanowire, steel_rod], [1 / 12, 1 / 12], 22),
+    new MatDef("Logic Circuit", [3, 7.5], [iron_plate, heat_sink], [1, 1], 30),
+    new MatDef("Rotor", [3, 10 / 3], [copper_ingot, iron_plate], [18, 18], 26),
+    new MatDef("Steel", [5, 10], [iron, coal], [4, 4], 24),
+    new MatDef("Concrete", [5, 5], [stone, wood_frame], [20, 4], 27),
+    new MatDef("Tungsten Carbide", [5, 8], [tungsten, steel], [1 / 2, 1 / 2], 17),
+    new MatDef("Electric Motor", [4, 60 / 22], [emagnet, steel, empty_fuel], [6, 6, 1], 29),
+    new MatDef("Industrial Frame", [4, 60 / 36], [steel, iron_plate, carbfibre], [18, 10, 4], 34),
+    new MatDef("Turbocharger", [6, 6], [heat_sink, computer, gyroscope, carbide], [4, 1, 1, 1], 40),
+    new MatDef("Super Computer", [6, 4], [computer, silicon, gyroscope, ind_frame], [1, 20, 1, 0.5], 41)];
+
 
 '________________________'
 'GLOBAL VARIABLES'
@@ -69,6 +84,8 @@ function factorycalc(reverse) {
   materialtotal = [0];
   materialtotal.length = materialdata.length;
   zero(materialtotal);
+'Buildings required for each material/recipe (for the building summary)'
+  buildingtotal = {};
 '_________________________'
 'END OF GLOBAL VARIABLE'
 
@@ -89,6 +106,17 @@ function factorycalc(reverse) {
   var levelFactory = [levelA, levelB, levelC, levelD, levelE, levelF, levelG, levelH,1,1,1];
 'array of the effective boost for each level (1 to 5)'
   var boostFactory = [1, 1.5, 2, 3, 4];
+
+'Swap in the selected alternate recipes (updated in place so every recipe using the material follows)'
+  for (var a = 0; a < altRecipes.length; a++) {
+    var altMat = materialdata[altRecipes[a].ID];
+    if (isAltSelected(altMat.ID)) {
+      altMat.factory = altRecipes[a].factory;
+      altMat.recipe = altRecipes[a].recipe;
+      altMat.quantity = altRecipes[a].quantity;
+      altMat.alt = true;
+    }
+  }
 
   'If reverse calc is required'
   if (reverse==true){
@@ -154,6 +182,7 @@ function factorycalc(reverse) {
   'if reverse calc not required, display the result'  
   'update and show the div element with the required material'
     materialOutput();
+    buildingOutput();
     document.getElementById("TreeTop").style.display = "flex";
     document.getElementById("box3").style.display = "flex";
 
@@ -227,11 +256,13 @@ function calculate(material, rate,divParentId,boxId) {
     createMatDetail(material.name, rate, factoryname(material.factory[0]), Math.ceil((rate / material.factory[1])*100)/100,divParentId,'matDet'+boxId,material.ID)
     //add the material to the total required
     materialtotal[material.ID] = materialtotal[material.ID] + rate;
+    addBuildings(material, rate);
   } else {
     //create a Material box with the material detail
-    createMatBox(material.name, rate, factoryname(material.factory[0]), Math.ceil(rate / material.factory[1]), divParentId, 'matBox' + boxId, material.ID)
+    createMatBox(material.name, rate, factoryname(material.factory[0]), Math.ceil(rate / material.factory[1]), divParentId, 'matBox' + boxId, material.ID, material.alt)
     //add the material to the total required
     materialtotal[material.ID] = materialtotal[material.ID] + rate;
+    addBuildings(material, rate);
     //store the current Id and create a MatChildren box to contain the material(s) required in the recipe
     createMatChildren(divParentId,'child'+boxId);
     tempParentId = boxId;
@@ -324,6 +355,70 @@ function materialOutput() {
   }
 }
 
+function isAltSelected(matId) {
+  //true if the alternate recipe is selected for the material matId
+  var select = document.getElementById('alt' + matId);
+  return select != null && select.value == 1;
+}
+
+function saveAlts() {
+  //remember the selected alternate recipes in the browser
+  var selected = [];
+  var selects = document.getElementsByClassName('altSelect');
+  for (var i = 0; i < selects.length; i++) {
+    if (selects[i].value == 1) { selected.push(selects[i].id) }
+  }
+  try { localStorage.setItem('builderment_alts', JSON.stringify(selected)) } catch (e) { }
+}
+
+function loadAlts() {
+  //restore the alternate recipes selected on a previous visit
+  var selected = [];
+  try { selected = JSON.parse(localStorage.getItem('builderment_alts')) || [] } catch (e) { }
+  for (var i = 0; i < selected.length; i++) {
+    if (document.getElementById(selected[i])) { document.getElementById(selected[i]).value = 1 }
+  }
+}
+window.addEventListener('DOMContentLoaded', loadAlts);
+
+function resetAlts() {
+  //set every material back to its standard recipe
+  var selects = document.getElementsByClassName('altSelect');
+  for (var i = 0; i < selects.length; i++) { selects[i].value = 0 }
+  saveAlts();
+}
+
+function addBuildings(material, rate) {
+  //add the (fractional) number of buildings needed for this material and recipe
+  var key = material.ID + (material.alt ? 'alt' : '');
+  if (!(key in buildingtotal)) {
+    buildingtotal[key] = { factory: material.factory[0], name: material.name, alt: material.alt, qty: 0 };
+  }
+  buildingtotal[key].qty = buildingtotal[key].qty + rate / material.factory[1];
+}
+
+function buildingOutput() {
+  //list the buildings required, grouped by building type, one line per material/recipe
+  var summary = document.getElementById('buildingSummary');
+  var html = '<div style="font-weight:bold;"> Buildings required </div>';
+  for (var f = 0; f <= 10; f++) {
+    var total = 0;
+    var items = [];
+    for (var key in buildingtotal) {
+      var b = buildingtotal[key];
+      if (b.factory != f) { continue }
+      var qty = Math.ceil(Math.round(b.qty * 1e6) / 1e6);
+      total = total + qty;
+      items.push(b.name + (b.alt ? ' <span class="altTag">ALT</span>' : '') + ': ' + qty + ' (' + Math.round(b.qty * 100) / 100 + ')');
+    }
+    if (items.length > 0) {
+      html += '<div class="bldRow"><b>' + factoryname(f) + ': ' + total + '</b> &nbsp; ' + items.join(' &middot; ') + '</div>';
+    }
+  }
+  summary.innerHTML = html;
+  summary.style.display = 'flex';
+}
+
 class MatDef {
   'MatDef class is the definition of the material recipes as:'
   'name: name of the material as string'
@@ -402,7 +497,7 @@ function createBranchFork(divParentId) {
   parentDiv.appendChild(branchBox);
 }
 
-function createMatBox(material, rate, factory, qty, divParentId, boxId, matId){
+function createMatBox(material, rate, factory, qty, divParentId, boxId, matId, alt){
   //create a material box, consisting of a material detail box (material, rate, factory, qty)
   //and a "-" sign 
   //appends to divParentId (meant to go in a TreeLevel div)
@@ -417,14 +512,14 @@ function createMatBox(material, rate, factory, qty, divParentId, boxId, matId){
   sign.setAttribute('class','plusMinus');
   
   parentDiv.appendChild(matBox);
-  createMatDetail(material, rate, factory, qty, matBox.id, boxId, matId);
+  createMatDetail(material, rate, factory, qty, matBox.id, boxId, matId, alt);
   matBox.appendChild(sign);
   tempId=divParentId.substring(4);
   matBox.setAttribute("onClick", "collapse("+tempId+")");
 
 }
 
-function createMatDetail(material, rate, factory, qty, divParentId, boxId, matId){
+function createMatDetail(material, rate, factory, qty, divParentId, boxId, matId, alt){
   //create a material detail box with its picture (matId), material name, 
   //calculated rate,factory required and qty of factories required
   //appends to divParentId (meant to go in a matBox div)
@@ -453,6 +548,11 @@ function createMatDetail(material, rate, factory, qty, divParentId, boxId, matId
   matRate.innerHTML = Math.round(rate * 100) / 100;
   factoryName.setAttribute('class', 'factoryName');
   factoryName.innerHTML=factory;
+  if (alt) {
+    //mark materials made with an alternate recipe
+    factoryName.innerHTML = factory + " (ALT)";
+    factoryName.classList.add('altRecipe');
+  }
   factoryNum.setAttribute('class', 'factoryNum');
   factoryNum.innerHTML=qty;
   spacer.setAttribute('class','spacer');
@@ -641,6 +741,7 @@ function openTab1() {
   document.getElementById("calculate2").style.display = "none";
 
   document.getElementById("box3").style.display = "none";
+  document.getElementById("buildingSummary").style.display = "none";
   document.getElementById("buttonBox").style.display = "none";
   document.getElementById("TreeTop").style.display = "none";
   document.getElementById("limit_resource").style.display = "none";
@@ -659,6 +760,7 @@ function openTab2() {
   document.getElementById("calculate2").style.display = "inline";
 
   document.getElementById("box3").style.display = "none";
+  document.getElementById("buildingSummary").style.display = "none";
   document.getElementById("buttonBox").style.display = "none";
   document.getElementById("TreeTop").style.display = "none";
   document.getElementById("limit_resource").style.display = "none";
