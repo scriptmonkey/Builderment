@@ -300,6 +300,29 @@ justify-content: center;
   text-align: center;
 }
 
+.altRecipe{
+  background: rgb(240, 175, 100);
+  font-weight: bold;
+}
+
+.altTag{
+  background: rgb(240, 175, 100);
+  border: 1px solid black;
+  border-radius: 4px;
+  padding: 0px 3px;
+  font-size: 0.8em;
+}
+
+.bldRow{
+  width: 100%;
+  padding: 3px 10px;
+  box-sizing: border-box;
+}
+
+.levelfact.altfact{
+  width: 180px;
+}
+
 .matRate{
   display: flex;
   align-items:center;

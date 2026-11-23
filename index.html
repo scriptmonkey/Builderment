@@ -237,6 +237,63 @@ background-size: 100% ;
 	</div>
 </div>
 
+<div class="box4" id="altBox">
+	<div style="font-weight:bold;"> Alternate Recipes</div>
+	<div class="levelfact" style="justify-content: center">
+		<button style="padding: 8px 10px" onclick="resetAlts()" > All Standard </button>
+	</div>
+	<div class="subbox2">
+		<div class="levelfact altfact" title="ALT Workshop: 1 Carbon Fibre makes 8 in 8s">
+			<div style="width: 120px; text-align:right"> Copper Wire :</div>
+			<div style="width: 55px"><select id="alt9" class="altSelect" onchange="saveAlts()"><option value="0">STD</option><option value="1">ALT</option></select></div>
+		</div>
+		<div class="levelfact altfact" title="ALT Workshop: 1 Steel makes 8 in 8s">
+			<div style="width: 120px; text-align:right"> Iron Gear :</div>
+			<div style="width: 55px"><select id="alt11" class="altSelect" onchange="saveAlts()"><option value="0">STD</option><option value="1">ALT</option></select></div>
+		</div>
+		<div class="levelfact altfact" title="ALT Machine Shop: 1 Nano Wire + 1 Steel Rod make 12 in 20s">
+			<div style="width: 120px; text-align:right"> Electromagnet :</div>
+			<div style="width: 55px"><select id="alt22" class="altSelect" onchange="saveAlts()"><option value="0">STD</option><option value="1">ALT</option></select></div>
+		</div>
+		<div class="levelfact altfact" title="ALT Machine Shop: 1 Iron Plating + 1 Heat Sink make 1 in 8s">
+			<div style="width: 120px; text-align:right"> Logic Circuit :</div>
+			<div style="width: 55px"><select id="alt30" class="altSelect" onchange="saveAlts()"><option value="0">STD</option><option value="1">ALT</option></select></div>
+		</div>
+		<div class="levelfact altfact" title="ALT Machine Shop: 18 Copper Ingot + 18 Iron Plating make 1 in 18s">
+			<div style="width: 120px; text-align:right"> Rotor :</div>
+			<div style="width: 55px"><select id="alt26" class="altSelect" onchange="saveAlts()"><option value="0">STD</option><option value="1">ALT</option></select></div>
+		</div>
+		<div class="levelfact altfact" title="ALT Forge: 4 Iron Ore + 4 Coal make 1 in 6s">
+			<div style="width: 120px; text-align:right"> Steel :</div>
+			<div style="width: 55px"><select id="alt24" class="altSelect" onchange="saveAlts()"><option value="0">STD</option><option value="1">ALT</option></select></div>
+		</div>
+		<div class="levelfact altfact" title="ALT Forge: 20 Stone + 4 Wood Frame make 1 in 12s">
+			<div style="width: 120px; text-align:right"> Concrete :</div>
+			<div style="width: 55px"><select id="alt27" class="altSelect" onchange="saveAlts()"><option value="0">STD</option><option value="1">ALT</option></select></div>
+		</div>
+		<div class="levelfact altfact" title="ALT Forge: 1 Tungsten Ore + 1 Steel make 2 in 15s">
+			<div style="width: 120px; text-align:right"> Tungsten Carbide :</div>
+			<div style="width: 55px"><select id="alt17" class="altSelect" onchange="saveAlts()"><option value="0">STD</option><option value="1">ALT</option></select></div>
+		</div>
+		<div class="levelfact altfact" title="ALT Industrial Factory: 6 Electromagnet + 6 Steel + 1 Empty Fuel Cell make 1 in 22s">
+			<div style="width: 120px; text-align:right"> Electric Motor :</div>
+			<div style="width: 55px"><select id="alt29" class="altSelect" onchange="saveAlts()"><option value="0">STD</option><option value="1">ALT</option></select></div>
+		</div>
+		<div class="levelfact altfact" title="ALT Industrial Factory: 18 Steel + 10 Iron Plating + 4 Carbon Fibre make 1 in 36s">
+			<div style="width: 120px; text-align:right"> Industrial Frame :</div>
+			<div style="width: 55px"><select id="alt34" class="altSelect" onchange="saveAlts()"><option value="0">STD</option><option value="1">ALT</option></select></div>
+		</div>
+		<div class="levelfact altfact" title="ALT Manufacturer: 4 Heat Sink + 1 Computer + 1 Gyroscope + 1 Tungsten Carbide make 1 in 10s">
+			<div style="width: 120px; text-align:right"> Turbocharger :</div>
+			<div style="width: 55px"><select id="alt40" class="altSelect" onchange="saveAlts()"><option value="0">STD</option><option value="1">ALT</option></select></div>
+		</div>
+		<div class="levelfact altfact" title="ALT Manufacturer: 2 Computer + 40 Silicon + 2 Gyroscope + 1 Industrial Frame make 2 in 30s">
+			<div style="width: 120px; text-align:right"> Super Computer :</div>
+			<div style="width: 55px"><select id="alt41" class="altSelect" onchange="saveAlts()"><option value="0">STD</option><option value="1">ALT</option></select></div>
+		</div>
+	</div>
+</div>
+
 <div style="display:flex; width:100%; justify-content: center">
 	<button onclick="factorycalc(false)"; id="calculate1"; style="width:200px">CALCULATE</button>
 </div>
@@ -518,6 +575,8 @@ background-size: 100% ;
   </div>
 </div>
 
+
+<div class="box3" id="buildingSummary"></div>
 
 <div id="buttonBox" class="buttonBox">
 </div>
