@@ -305,6 +305,16 @@ justify-content: center;
   font-weight: bold;
 }
 
+select.nodeAlt{
+  width: auto;
+  min-width: 0;
+  padding: 0px;
+  margin-left: 4px;
+  font-size: 0.75em;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
 .altTag{
   background: rgb(240, 175, 100);
   border: 1px solid black;
