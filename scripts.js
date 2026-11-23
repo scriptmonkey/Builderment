@@ -1,3 +1,6 @@
+var nodeAlts = {};
+var nodeAltsTarget = null;
+
 function factorycalc(reverse) {
 
   'This is the main function to call out to create the recipe tree as selected in the "desired material" field at the rate defined in "desired rate"'
@@ -74,6 +77,11 @@ function factorycalc(reverse) {
     new MatDef("Industrial Frame", [4, 60 / 36], [steel, iron_plate, carbfibre], [18, 10, 4], 34),
     new MatDef("Turbocharger", [6, 6], [heat_sink, computer, gyroscope, carbide], [4, 1, 1, 1], 40),
     new MatDef("Super Computer", [6, 4], [computer, silicon, gyroscope, ind_frame], [1, 20, 1, 0.5], 41)];
+  altdata = [];
+  for (var a = 0; a < altRecipes.length; a++) {
+    altRecipes[a].alt = true;
+    altdata[altRecipes[a].ID] = altRecipes[a];
+  }
 
 
 '________________________'
@@ -107,15 +115,10 @@ function factorycalc(reverse) {
 'array of the effective boost for each level (1 to 5)'
   var boostFactory = [1, 1.5, 2, 3, 4];
 
-'Swap in the selected alternate recipes (updated in place so every recipe using the material follows)'
-  for (var a = 0; a < altRecipes.length; a++) {
-    var altMat = materialdata[altRecipes[a].ID];
-    if (isAltSelected(altMat.ID)) {
-      altMat.factory = altRecipes[a].factory;
-      altMat.recipe = altRecipes[a].recipe;
-      altMat.quantity = altRecipes[a].quantity;
-      altMat.alt = true;
-    }
+'Recipe choices made on tree nodes only apply to the material they were made for'
+  if (index != nodeAltsTarget) {
+    nodeAlts = {};
+    nodeAltsTarget = index;
   }
 
   'If reverse calc is required'
@@ -127,6 +130,9 @@ function factorycalc(reverse) {
   for (i = 0; i < materialdata.length; i++) {
     materialdata[i].factory[1] = materialdata[i].factory[1] * boostFactory  [levelFactory[materialdata[i].factory[0]]];
   }
+  for (var a = 0; a < altRecipes.length; a++) {
+    altRecipes[a].factory[1] = altRecipes[a].factory[1] * boostFactory[levelFactory[altRecipes[a].factory[0]]];
+  }
 
 'Get the main div element where the tree will appear and clear it'
   var treeBox = document.getElementById('TreeTop');
@@ -135,7 +141,7 @@ function factorycalc(reverse) {
   createTreeLevel('TreeTop','tree10000');
 
 'Launch main function to calculate the required materials'
-  calculate(materialdata[index], rate,'tree10000',10000);
+  calculate(materialdata[index], rate,'tree10000',10000, String(index));
 
 'If reverse calc required, recalculate the output based on the limiting extractors'
   if (reverse==true){
@@ -243,13 +249,20 @@ function reversefactorycalc(){
   
 }
 
-function calculate(material, rate,divParentId,boxId) {
+function calculate(material, rate,divParentId,boxId,path) {
   var divParent = document.getElementById(divParentId);
   var matChildren=document.createElement('div');
   var treeLevel=document.createElement('div');
   var branchBox=document.createElement('div');
   var matBox=document.createElement('div');
   var tempParentId=0
+  var altPath = null;
+
+  //use the alternate recipe if chosen on this tree node (path), otherwise if chosen as default
+  if (altdata[material.ID]) {
+    altPath = path;
+    if (path in nodeAlts ? nodeAlts[path] == 1 : isAltSelected(material.ID)) { material = altdata[material.ID] }
+  }
 
   if (material.recipe == 0) {
     //raw material with no recipe 
@@ -259,7 +272,7 @@ function calculate(material, rate,divParentId,boxId) {
     addBuildings(material, rate);
   } else {
     //create a Material box with the material detail
-    createMatBox(material.name, rate, factoryname(material.factory[0]), Math.ceil(rate / material.factory[1]), divParentId, 'matBox' + boxId, material.ID, material.alt)
+    createMatBox(material.name, rate, factoryname(material.factory[0]), Math.ceil(rate / material.factory[1]), divParentId, 'matBox' + boxId, material.ID, material.alt, altPath)
     //add the material to the total required
     materialtotal[material.ID] = materialtotal[material.ID] + rate;
     addBuildings(material, rate);
@@ -272,7 +285,7 @@ function calculate(material, rate,divParentId,boxId) {
       boxId=boxId+1
       createTreeLevel('child' + tempParentId, 'tree' + boxId);
       createBranchStraight('tree' + boxId);
-      boxId=calculate(material.recipe[0], material.quantity[0] * rate, 'tree' + boxId,boxId);
+      boxId=calculate(material.recipe[0], material.quantity[0] * rate, 'tree' + boxId,boxId, path + '/0:' + material.recipe[0].ID);
     } else {
         // there is more than one material required
         for (var i = 0; i < material.recipe.length; i++) {
@@ -290,7 +303,7 @@ function calculate(material, rate,divParentId,boxId) {
               createBranchEnd('tree' + boxId);
             }
           }
-          boxId=calculate(material.recipe[i], material.quantity[i] * rate, 'tree' + boxId, boxId);  
+          boxId=calculate(material.recipe[i], material.quantity[i] * rate, 'tree' + boxId, boxId, path + '/' + i + ':' + material.recipe[i].ID);  
         }
       }
     boxId = boxId - 10000;
@@ -382,10 +395,27 @@ function loadAlts() {
 window.addEventListener('DOMContentLoaded', loadAlts);
 
 function resetAlts() {
-  //set every material back to its standard recipe
+  //set every material and tree node back to its standard recipe
   var selects = document.getElementsByClassName('altSelect');
   for (var i = 0; i < selects.length; i++) { selects[i].value = 0 }
+  nodeAlts = {};
   saveAlts();
+  recalc();
+}
+
+function setNodeAlt(path, matId, value) {
+  //choose the recipe for one tree node (and its subtree), then recalculate
+  if (value == (isAltSelected(matId) ? 1 : 0)) { delete nodeAlts[path] }
+  else { nodeAlts[path] = Number(value) }
+  recalc();
+}
+
+function recalc() {
+  //redo the current calculation (if one is displayed) after a recipe change
+  if (document.getElementById('TreeTop').style.display != 'flex') { return }
+  var scroll = window.scrollY;
+  factorycalc(document.getElementById('calculate2').style.display == 'inline');
+  window.scrollTo(0, scroll);
 }
 
 function addBuildings(material, rate) {
@@ -497,7 +527,7 @@ function createBranchFork(divParentId) {
   parentDiv.appendChild(branchBox);
 }
 
-function createMatBox(material, rate, factory, qty, divParentId, boxId, matId, alt){
+function createMatBox(material, rate, factory, qty, divParentId, boxId, matId, alt, altPath){
   //create a material box, consisting of a material detail box (material, rate, factory, qty)
   //and a "-" sign 
   //appends to divParentId (meant to go in a TreeLevel div)
@@ -512,14 +542,14 @@ function createMatBox(material, rate, factory, qty, divParentId, boxId, matId, a
   sign.setAttribute('class','plusMinus');
   
   parentDiv.appendChild(matBox);
-  createMatDetail(material, rate, factory, qty, matBox.id, boxId, matId, alt);
+  createMatDetail(material, rate, factory, qty, matBox.id, boxId, matId, alt, altPath);
   matBox.appendChild(sign);
   tempId=divParentId.substring(4);
   matBox.setAttribute("onClick", "collapse("+tempId+")");
 
 }
 
-function createMatDetail(material, rate, factory, qty, divParentId, boxId, matId, alt){
+function createMatDetail(material, rate, factory, qty, divParentId, boxId, matId, alt, altPath){
   //create a material detail box with its picture (matId), material name, 
   //calculated rate,factory required and qty of factories required
   //appends to divParentId (meant to go in a matBox div)
@@ -550,8 +580,17 @@ function createMatDetail(material, rate, factory, qty, divParentId, boxId, matId
   factoryName.innerHTML=factory;
   if (alt) {
     //mark materials made with an alternate recipe
-    factoryName.innerHTML = factory + " (ALT)";
     factoryName.classList.add('altRecipe');
+  }
+  if (altPath != null) {
+    //STD/ALT choice for this tree node only
+    var nodeSelect = document.createElement('select');
+    nodeSelect.setAttribute('class', 'nodeAlt');
+    nodeSelect.innerHTML = '<option value="0">STD</option><option value="1">ALT</option>';
+    nodeSelect.value = alt ? 1 : 0;
+    nodeSelect.setAttribute('onclick', 'event.stopPropagation()');
+    nodeSelect.setAttribute('onchange', 'setNodeAlt("' + altPath + '", ' + matId + ', this.value)');
+    factoryName.appendChild(nodeSelect);
   }
   factoryNum.setAttribute('class', 'factoryNum');
   factoryNum.innerHTML=qty;
